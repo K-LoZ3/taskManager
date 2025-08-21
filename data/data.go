@@ -75,15 +75,33 @@ func FindTaskId(id int) (Task, error) {
   return task, err
 }
 
-func FindTaskName(name string) (Task, error) {
-  var task Task
+func FindTaskName(name string) ([]Task, error) {
+  var tasks []Task
   
-  err := db.QueryRow("SELECT id, description, done, date FROM task WHERE name = ?", name).Scan(&task.Id, &task.Description, &task.Check, &task.Date)
+  rows, err := db.Query("SELECT id, name, description, done, date FROM task WHERE name LIKE ?", "%"+name+"%")
   if err != nil {
-    return task, err
+    return tasks, err
   }
+  defer rows.Close()
   
-  return task, err
+  for rows.Next() {
+		var t Task
+		var check int // SQLite guarda BOOL como INTEGER (0/1)
+
+		err := rows.Scan(&t.Id, &t.Name, &t.Description, &check, &t.Date)
+		if err != nil {
+			return nil, err
+		}
+
+		t.Check = check == 1
+		tasks = append(tasks, t)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func GetTask() ([]Task, error) {

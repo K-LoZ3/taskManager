@@ -19,7 +19,7 @@ var addCmd = &cobra.Command {
     }
     defer data.Close()
     
-    data.AddNameTask("Nueva tareas de prueba hardcodeada")
+    data.AddNameTask(arg[0])
     
     //Prueba para ver si almaceno bien
     tasks, err := data.GetTask()
@@ -27,7 +27,12 @@ var addCmd = &cobra.Command {
       fmt.Println("Error al consultar las tareas", err)
     }
     
-    fmt.Println(tasks)
+    tarea, err := data.FindTaskId(3)
+    
+    tarea3, err := data.FindTaskName("otra")
+    
+    fmt.Println(tasks, "tarea--->", tarea, "Busqueda--->", tarea3)
+    //Pruebas de las funcione data
   },
 }
 
