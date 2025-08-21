@@ -2,18 +2,9 @@ package cmd
 
 import (
   "fmt"
-  "time"
   
   "github.com/spf13/cobra"
 )
-
-type task struct {
-  id int
-  name string
-  description string
-  check bool
-  date time.Time
-}
 
 var rootCmd = &cobra.Command {
   Use: "task",

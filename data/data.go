@@ -7,7 +7,7 @@ import (
   _ "modernc.org/sqlite"
 )
 
-var db *sql.db
+var db *sql.DB
 
 type Task struct {
   Id int
@@ -30,7 +30,7 @@ func InitDB() error {
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT NOT NULL,
-  check BOOLEAN NOT NULL DEFAULT 0,
+  done BOOLEAN NOT NULL DEFAULT 0,
   date DATETIME DEFAULT CURRENT_TIMESTAMP
   );`
   
@@ -47,7 +47,7 @@ func Close() {
 }
 
 func AddNameTask(t string) error {
-  _, err = db.Exec("INSERT INTO task(name, description) VALUES( ?, ?)", t, "")
+  _, err := db.Exec("INSERT INTO task(name, description) VALUES( ?, ?)", t, "")
   if err != nil {
     return err
   }
@@ -56,7 +56,7 @@ func AddNameTask(t string) error {
 }
 
 func AddTask(name string, description string, date time.Time) error {
-  _, err = db.Exec("INSERT INTO task(name, description, date) VALUES( ?, ?, ?)", name, description, date)
+  _, err := db.Exec("INSERT INTO task(name, description, date) VALUES( ?, ?, ?)", name, description, date)
   if err != nil {
     return err
   }
@@ -67,7 +67,7 @@ func AddTask(name string, description string, date time.Time) error {
 func FindTaskId(id int) (Task, error) {
   var task Task
   
-  err := db.QueryRow("SELECT name, description, check, date FROM task WHERE id = ?", id).Scan(&task.Name, &task.Description, &task.Check, &task.Date)
+  err := db.QueryRow("SELECT name, description, done, date FROM task WHERE id = ?", id).Scan(&task.Name, &task.Description, &task.Check, &task.Date)
   if err != nil {
     return task, err
   }
@@ -75,10 +75,10 @@ func FindTaskId(id int) (Task, error) {
   return task, err
 }
 
-func FindTaskName(name) (Task, error) {
+func FindTaskName(name string) (Task, error) {
   var task Task
   
-  err := db.QueryRow("SELECT id, description, check, date FROM task WHERE name = ?", name).Scan(&task.Id, &task.Description, &task.Check, &task.Date)
+  err := db.QueryRow("SELECT id, description, done, date FROM task WHERE name = ?", name).Scan(&task.Id, &task.Description, &task.Check, &task.Date)
   if err != nil {
     return task, err
   }
@@ -86,12 +86,12 @@ func FindTaskName(name) (Task, error) {
   return task, err
 }
 
-func Task() ([]Task, error) {
+func GetTask() ([]Task, error) {
   var tasks []Task
   
-  rows, err := db.Query("SELECT id, description, check, date FROM task")
+  rows, err := db.Query("SELECT id, name, description, done, date FROM task")
   if err != nil {
-    return task, err
+    return tasks, err
   }
   defer rows.Close()
   
@@ -104,7 +104,7 @@ func Task() ([]Task, error) {
 			return nil, err
 		}
 
-		t.Check = Check == 1
+		t.Check = check == 1
 		tasks = append(tasks, t)
 	}
 
