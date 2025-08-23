@@ -61,6 +61,7 @@ var addCmd = &cobra.Command {
       newTask.Description, _ = reader.ReadString('\n')
       fmt.Print("Fecha para la tarea dd/mm/yyyy: ")
       dateStr, _ := reader.ReadString('\n')
+      dateStr = strings.TrimSpace(dateStr)
       
       if dateStr == "" {
         newTask.Date = time.Now()
@@ -77,8 +78,11 @@ var addCmd = &cobra.Command {
     if newTask.Date.IsZero() {
       newTask.Date = time.Now()
     }
-    
-    data.AddTask(newTask)
+
+    err = data.AddTask(newTask)
+    if err != nil {
+      fmt.Println(err)
+    }
     
     //para probar como va guardando mientras
     //tareas, err := data.GetTask()

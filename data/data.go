@@ -1,6 +1,7 @@
 package data
 
 import (
+  "fmt"
   "time"
   "database/sql"
   
@@ -11,10 +12,30 @@ var db *sql.DB
 
 type Task struct {
   Id int
+  TaskId int
   Name string
   Description string
   Check bool
   Date time.Time
+}
+
+func (t Task) String() string {
+  status := "pendiente"
+  if t.Check {
+      status = "hecho"
+  }
+
+  return fmt.Sprintf(`
+  (%d)-> %s [%s]
+  %s
+  Descripción: %s
+  `,
+      t.TaskId,
+      t.Name,
+      status,
+      t.Date.Format("02-01-2006"), // formato de fecha YYYY-MM-DD
+      t.Description,
+  )
 }
 
 func InitDB() error {
@@ -27,11 +48,12 @@ func InitDB() error {
   
   create := `
   CREATE TABLE IF NOT EXISTS task(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  description TEXT NOT NULL,
-  done BOOLEAN NOT NULL DEFAULT 0,
-  date DATETIME DEFAULT CURRENT_TIMESTAMP
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    taskid INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    done BOOLEAN NOT NULL DEFAULT 0,
+    date DATETIME DEFAULT CURRENT_TIMESTAMP
   );`
   
   _, err = db.Exec(create)
@@ -46,17 +68,14 @@ func Close() {
   db.Close()
 }
 
-func AddNameTask(t string) error {
-  _, err := db.Exec("INSERT INTO task(name, description) VALUES( ?, ?)", t, "")
-  if err != nil {
-    return err
-  }
-  
-  return nil
-}
-
 func AddTask(t Task) error {
-  _, err := db.Exec("INSERT INTO task(name, description, date) VALUES( ?, ?, ?)", t.Name, t.Description, t.Date)
+  _, err := db.Exec(`
+    INSERT INTO task (taskid, name, description, date)
+    VALUES (
+      COALESCE((SELECT MAX(taskid) + 1 FROM task), 1),
+      ?, ?, ?
+  );`, t.Name, t.Description, t.Date)
+    
   if err != nil {
     return err
   }
@@ -67,7 +86,10 @@ func AddTask(t Task) error {
 func FindTaskId(id int) (Task, error) {
   var task Task
   
-  err := db.QueryRow("SELECT name, description, done, date FROM task WHERE id = ?", id).Scan(&task.Name, &task.Description, &task.Check, &task.Date)
+  err := db.QueryRow("SELECT name, description, done, date FROM task WHERE taskid = ?", id).Scan(&task.Name, &task.Description, &task.Check, &task.Date)
+  
+  task.TaskId = id
+  
   if err != nil {
     return task, err
   }
@@ -78,7 +100,7 @@ func FindTaskId(id int) (Task, error) {
 func FindTaskName(name string) ([]Task, error) {
   var tasks []Task
   
-  rows, err := db.Query("SELECT id, name, description, done, date FROM task WHERE name LIKE ?", "%"+name+"%")
+  rows, err := db.Query("SELECT taskid, name, description, done, date FROM task WHERE name LIKE ?", "%"+name+"%")
   if err != nil {
     return tasks, err
   }
@@ -88,7 +110,7 @@ func FindTaskName(name string) ([]Task, error) {
 		var t Task
 		var check int // SQLite guarda BOOL como INTEGER (0/1)
 
-		err := rows.Scan(&t.Id, &t.Name, &t.Description, &check, &t.Date)
+		err := rows.Scan(&t.TaskId, &t.Name, &t.Description, &check, &t.Date)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +129,7 @@ func FindTaskName(name string) ([]Task, error) {
 func GetTask() ([]Task, error) {
   var tasks []Task
   
-  rows, err := db.Query("SELECT id, name, description, done, date FROM task")
+  rows, err := db.Query("SELECT taskid, name, description, done, date FROM task")
   if err != nil {
     return tasks, err
   }
@@ -117,7 +139,7 @@ func GetTask() ([]Task, error) {
 		var t Task
 		var check int // SQLite guarda BOOL como INTEGER (0/1)
 
-		err := rows.Scan(&t.Id, &t.Name, &t.Description, &check, &t.Date)
+		err := rows.Scan(&t.TaskId, &t.Name, &t.Description, &check, &t.Date)
 		if err != nil {
 			return nil, err
 		}
@@ -133,20 +155,31 @@ func GetTask() ([]Task, error) {
 	return tasks, nil
 }
 
-func checkTask(id int) error {
-  
-  _, err := db.Exec("UPDATE task SET done = ? WHERE id = ?", 1, id)
+func CheckTask(id int) error {
+  _, err := db.Exec("UPDATE task SET done = 1 - done WHERE taskid = ?", id)
+    return err
+}
+
+func DeleteTask(id int) error {
+  _, err := db.Exec("DELETE FROM task WHERE taskid = ?", id)
   if err != nil {
     return err
   }
   
-  return err
-}
-
-func deleteTask(id int) error {
-  _, err := db.Exec("DELETE FROM task WHERE id = ?", id)
+  _, err = db.Exec(`
+    WITH ordered AS (
+      SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS new_number
+      FROM task
+    )
+    UPDATE task
+    SET taskid = (
+      SELECT new_number
+      FROM ordered o
+      WHERE o.id = task.id
+    );
+  `)
   if err != nil {
-    return err
+    fmt.Println(err)
   }
   
   return nil
