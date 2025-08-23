@@ -13,7 +13,7 @@ import (
 
 var custom bool
 var descripcion string
-var date time.Time
+var date string
 
 var addCmd = &cobra.Command {
   Use: "add",
@@ -32,11 +32,27 @@ var addCmd = &cobra.Command {
       return
     }
     
-    newTask := data.Task {
-      Name: arg[0],
-      Description: descripcion,
-      Date: date,
+    var newTask data.Task
+    
+    if date== "" {
+      newTask = data.Task {
+        Name: arg[0],
+        Description: descripcion,
+        Date: time.Now(),
+      }
+    
+    } else {
+      dateTask, err := time.Parse("02/01/2006", strings.TrimSpace(date))
+      if err != nil {
+        fmt.Println("error en la fecha", err)
+      }
+      newTask = data.Task {
+        Name: arg[0],
+        Description: descripcion,
+        Date: dateTask,
+      }
     }
+    
     //newTask.Name = arg[0]
     
     if custom {
@@ -71,6 +87,10 @@ var addCmd = &cobra.Command {
 }
 
 func init() {
+  
+  addCmd.Flags().StringVarP(&descripcion, "descrip", "d", "", "Ingresa la descripcion")
+  
+  addCmd.Flags().StringVarP(&date, "fecha", "f", "", "Ingresa la fecha")
   
   addCmd.Flags().BoolVarP(&custom, "custom", "c", false, "Marca para saber si se usa el metodo completoo no.")
   
