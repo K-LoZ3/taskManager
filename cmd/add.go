@@ -2,10 +2,18 @@ package cmd
 
 import (
   "fmt"
+  "os"
+  "bufio"
+  "time"
+  "strings"
   "Practicas/tareas/data"
   
   "github.com/spf13/cobra"
 )
+
+var custom bool
+var descripcion string
+var date time.Time
 
 var addCmd = &cobra.Command {
   Use: "add",
@@ -19,23 +27,52 @@ var addCmd = &cobra.Command {
     }
     defer data.Close()
     
-    data.AddNameTask(arg[0])
-    
-    //Prueba para ver si almaceno bien
-    tasks, err := data.GetTask()
-    if err != nil {
-      fmt.Println("Error al consultar las tareas", err)
+    if len(arg) == 0 || arg[0] == "" {
+      fmt.Println("Debe darle un nombre a la tarea")
+      return
     }
     
-    tarea, err := data.FindTaskId(3)
+    newTask := data.Task {
+      Name: arg[0],
+      Description: descripcion,
+      Date: date,
+    }
+    //newTask.Name = arg[0]
     
-    tarea3, err := data.FindTaskName("otra")
+    if custom {
+      reader := bufio.NewReader(os.Stdin)
+      fmt.Print("Descripcion: ")
+      newTask.Description, _ = reader.ReadString('\n')
+      fmt.Print("Fecha para la tarea dd/mm/yyyy: ")
+      dateStr, _ := reader.ReadString('\n')
+      
+      if dateStr == "" {
+        newTask.Date = time.Now()
+      } else {
+        newTask.Date, err = time.Parse("02/01/2006", strings.TrimSpace(dateStr))
+      }
+      
+      if err != nil {
+        fmt.Println("Error en la fecha", err)
+      }
+      // terminar la logica para guardar los datos
+    }
     
-    fmt.Println(tasks, "tarea--->", tarea, "Busqueda--->", tarea3)
-    //Pruebas de las funcione data
+    if newTask.Date.IsZero() {
+      newTask.Date = time.Now()
+    }
+    
+    data.AddTask(newTask)
+    
+    //para probar como va guardando mientras
+    //tareas, err := data.GetTask()
+    //fmt.Println(tareas, err)
   },
 }
 
 func init() {
+  
+  addCmd.Flags().BoolVarP(&custom, "custom", "c", false, "Marca para saber si se usa el metodo completoo no.")
+  
   rootCmd.AddCommand(addCmd)
 }

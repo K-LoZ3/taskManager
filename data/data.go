@@ -55,8 +55,8 @@ func AddNameTask(t string) error {
   return nil
 }
 
-func AddTask(name string, description string, date time.Time) error {
-  _, err := db.Exec("INSERT INTO task(name, description, date) VALUES( ?, ?, ?)", name, description, date)
+func AddTask(t Task) error {
+  _, err := db.Exec("INSERT INTO task(name, description, date) VALUES( ?, ?, ?)", t.Name, t.Description, t.Date)
   if err != nil {
     return err
   }
@@ -131,4 +131,23 @@ func GetTask() ([]Task, error) {
 	}
 
 	return tasks, nil
+}
+
+func checkTask(id int) error {
+  
+  _, err := db.Exec("UPDATE task SET done = ? WHERE id = ?", 1, id)
+  if err != nil {
+    return err
+  }
+  
+  return err
+}
+
+func deleteTask(id int) error {
+  _, err := db.Exec("DELETE FROM task WHERE id = ?", id)
+  if err != nil {
+    return err
+  }
+  
+  return nil
 }
