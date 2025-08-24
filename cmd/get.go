@@ -7,6 +7,16 @@ import (
   "github.com/spf13/cobra"
 )
 
+type tasks []data.Task
+
+func (ts tasks) String() string {
+  var out string
+  for _, t := range ts {
+    out += t.String()
+  }
+  return out
+}
+
 var getCmd = &cobra.Command {
   Use: "get",
   Short: "get tasks", //ver si esta bien escrito
@@ -19,7 +29,9 @@ var getCmd = &cobra.Command {
     }
     defer data.Close()
     
-    tareas, err := data.GetTask()
+    var tareas tasks
+    
+    tareas, err = data.GetTask()
     if err != nil {
       fmt.Println(err)
       return
