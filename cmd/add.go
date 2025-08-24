@@ -6,7 +6,7 @@ import (
   "bufio"
   "time"
   "strings"
-  "Practicas/tareas/data"
+  "Practicas/taskManager/data"
   
   "github.com/spf13/cobra"
 )

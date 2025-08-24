@@ -1,6 +1,7 @@
 package data
 
 import (
+  "os"
   "fmt"
   "time"
   "database/sql"
@@ -41,7 +42,16 @@ func (t Task) String() string {
 func InitDB() error {
   var err error
   
-  db, err = sql.Open("sqlite", "task.db")
+  home, err := os.UserHomeDir()
+  if err != nil {
+    panic(err)
+  }
+
+  dbPath := fmt.Sprintf("%s/tareas/task.db", home)
+
+  db, err = sql.Open("sqlite", dbPath)
+  
+  //db, err = sql.Open("sqlite", "~/tareas/task.db")
   if err != nil {
     return err
   }

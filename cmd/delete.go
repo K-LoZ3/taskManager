@@ -3,7 +3,7 @@ package cmd
 import (
   "fmt"
   "strconv"
-  "Practicas/tareas/data"
+  "Practicas/taskManager/data"
   
   "github.com/spf13/cobra"
 )

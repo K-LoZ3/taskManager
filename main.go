@@ -1,7 +1,7 @@
 package main
 
 import (
-  "Practicas/tareas/cmd"
+  "Practicas/taskManager/cmd"
 )
 
 func main() {
